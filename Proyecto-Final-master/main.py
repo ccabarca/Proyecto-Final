@@ -494,34 +494,6 @@ def moneda(valor):
     except Exception:
         return valor
 
-@app.post('/api/cuarto/asignar/<int:apto_num>/<int:cuarto_num>')
-def api_asignar_inquilino(apto_num, cuarto_num):
-    apto = apartamentos[apto_num-1]
-    c = apto.get_cuarto(cuarto_num)
-    data = request.get_json(force=True, silent=True) or {}
-    nombre = data.get('nombre', '')
-    renta = float(data.get('renta', c.renta or apto.renta_base))
-    msg = asignar_inquilino_y_renta(c, nombre, renta)
-    return jsonify(ok=True, msg=msg, cuarto={
-        'numero': c.numero, 'inquilino': c.inquilino, 'renta': c.renta, 'activo': c.activo
-    })
-
-@app.post('/api/cuarto/liberar/<int:apto_num>/<int:cuarto_num>')
-def api_liberar_cuarto(apto_num, cuarto_num):
-    apto = apartamentos[apto_num-1]
-    c = apto.get_cuarto(cuarto_num)
-    msg = liberar_cuarto(c)
-    return jsonify(ok=True, msg=msg, cuarto={'numero': c.numero, 'activo': c.activo, 'inquilino': c.inquilino})
-
-@app.post('/api/pagos/registrar/<int:apto_num>/<int:cuarto_num>')
-def api_registrar_pago(apto_num, cuarto_num):
-    apto = apartamentos[apto_num-1]
-    c = apto.get_cuarto(cuarto_num)
-    data = request.get_json(force=True, silent=True) or {}
-    monto = float(data.get('monto', c.renta or apto.renta_base))
-    msg = marcar_pago_cuarto(c, monto)
-    return jsonify(ok=True, msg=msg, pago={'fecha': c.ultimo_pago.strftime('%Y-%m-%d %H:%M'), 'monto': monto})
-
 @app.post('/api/pagos/solicitar/<int:apto_num>/<int:cuarto_num>')
 def api_solicitar_pago(apto_num, cuarto_num):
     from models import Apartamento, Cuarto, SolicitudPago
@@ -548,7 +520,7 @@ def api_solicitar_pago(apto_num, cuarto_num):
         fecha_solicitud=datetime.now(),
         fecha_vencimiento=datetime.now() + timedelta(days=7),
         estado='pendiente',
-        observaciones=nota
+        nota=nota
     )
     
     db.session.add(solicitud)
