@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Marketing - Gestión de Apartamentos</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <h1><i class="fas fa-bullhorn"></i> Marketing & Promociones</h1>
+    <p class="subtitle">Estrategias de marketing y campañas promocionales</p>
+    
+    <!-- Navegación rápida -->
+    <div class="nav-quick">
+      <a href="/" class="btn btn-primary">
+        <i class="fas fa-home"></i> Inicio
+      </a>
+      <a href="/dashboard" class="btn btn-secondary">
+        <i class="fas fa-chart-line"></i> Dashboard
+      </a>
+      <a href="/analytics" class="btn btn-success">
+        <i class="fas fa-chart-bar"></i> Analytics
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <div class="message {{cat}}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Campañas Promocionales -->
+  <div class="card-section">
+    <h4><i class="fas fa-megaphone"></i> Campañas Promocionales Sugeridas</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for campana in campanas %}
+      <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="status-badge {% if campana.prioridad == 'alta' %}danger{% elif campana.prioridad == 'media' %}warning{% else %}success{% endif %}">
+              {{campana.prioridad|title}}
+            </span>
+            <span class="text-sm text-secondary">{{campana.tipo|title}}</span>
+          </div>
+          <i class="fas fa-{{'fire' if campana.prioridad == 'alta' else 'star'}} text-{{'red' if campana.prioridad == 'alta' else 'yellow'}}"></i>
+        </div>
+        
+        <h5 class="font-bold text-xl text-primary mb-2">Apartamento {{campana.apartamento_numero}}</h5>
+        <p class="text-secondary mb-4">{{campana.descripcion}}</p>
+        
+        <div class="space-y-2 mb-4">
+          <div class="flex justify-between">
+            <span class="text-sm text-secondary">Cuartos disponibles:</span>
+            <span class="font-semibold">{{campana.cuartos_libres}}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-secondary">Descuento sugerido:</span>
+            <span class="font-semibold text-success">{{campana.descuento_sugerido}}%</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-secondary">Renta original:</span>
+            <span class="font-semibold">{{campana.renta_original|moneda}}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-secondary">Renta promocional:</span>
+            <span class="font-semibold text-success">{{campana.renta_promocional|moneda}}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-secondary">Ahorro mensual:</span>
+            <span class="font-semibold text-success">{{campana.ahorro_mensual|moneda}}</span>
+          </div>
+        </div>
+        
+        <div class="flex gap-2">
+          <button class="btn btn-success flex-1" onclick="crearPromocion({{campana.apartamento_id}}, {{campana.descuento_sugerido}})">
+            <i class="fas fa-check"></i> Aplicar
+          </button>
+          <button class="btn btn-secondary" onclick="verContenido({{campana.apartamento_id}})">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Estrategias de Retención -->
+  <div class="card-section">
+    <h4><i class="fas fa-heart"></i> Estrategias de Retención</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% for estrategia in estrategias %}
+      <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="status-badge {% if estrategia.tipo == 'fidelidad' %}success{% else %}info{% endif %}">
+              {{estrategia.tipo|title}}
+            </span>
+            <span class="text-sm text-secondary">{{estrategia.estrategia}}</span>
+          </div>
+          <i class="fas fa-{{'crown' if estrategia.tipo == 'fidelidad' else 'clock'}} text-{{'gold' if estrategia.tipo == 'fidelidad' else 'blue'}}"></i>
+        </div>
+        
+        <h5 class="font-semibold text-primary mb-2">
+          Apartamento {{estrategia.apartamento}} - Hab. {{estrategia.cuarto}}
+        </h5>
+        <p class="text-secondary mb-2">{{estrategia.inquilino}}</p>
+        <p class="text-sm text-secondary mb-3">{{estrategia.descripcion}}</p>
+        
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-success">
+            {% if estrategia.tipo == 'fidelidad' %}
+              Descuento: {{estrategia.descuento_sugerido}}%
+            {% else %}
+              Bonificación: {{estrategia.bonificacion_sugerida|moneda}}
+            {% endif %}
+          </span>
+          <span class="text-xs text-secondary">{{estrategia.dias_inquilino}} días</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Campañas Estacionales -->
+  <div class="card-section">
+    <h4><i class="fas fa-calendar-alt"></i> Campañas Estacionales</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="campana-estacional" data-estacion="verano">
+        <div class="bg-gradient-to-br from-yellow-400 to-orange-500 text-white p-6 rounded-lg text-center">
+          <i class="fas fa-sun text-4xl mb-3"></i>
+          <h5 class="font-bold text-lg mb-2">Promoción de Verano</h5>
+          <p class="text-sm mb-3">15% de descuento por 60 días</p>
+          <button class="btn btn-white" onclick="crearCampanaEstacional('verano')">
+            <i class="fas fa-play"></i> Activar
+          </button>
+        </div>
+      </div>
+      
+      <div class="campana-estacional" data-estacion="invierno">
+        <div class="bg-gradient-to-br from-blue-400 to-blue-600 text-white p-6 rounded-lg text-center">
+          <i class="fas fa-snowflake text-4xl mb-3"></i>
+          <h5 class="font-bold text-lg mb-2">Oferta de Invierno</h5>
+          <p class="text-sm mb-3">20% de descuento por 90 días</p>
+          <button class="btn btn-white" onclick="crearCampanaEstacional('invierno')">
+            <i class="fas fa-play"></i> Activar
+          </button>
+        </div>
+      </div>
+      
+      <div class="campana-estacional" data-estacion="primavera">
+        <div class="bg-gradient-to-br from-green-400 to-green-600 text-white p-6 rounded-lg text-center">
+          <i class="fas fa-seedling text-4xl mb-3"></i>
+          <h5 class="font-bold text-lg mb-2">Renovación de Primavera</h5>
+          <p class="text-sm mb-3">10% de descuento por 45 días</p>
+          <button class="btn btn-white" onclick="crearCampanaEstacional('primavera')">
+            <i class="fas fa-play"></i> Activar
+          </button>
+        </div>
+      </div>
+      
+      <div class="campana-estacional" data-estacion="otoño">
+        <div class="bg-gradient-to-br from-orange-400 to-red-500 text-white p-6 rounded-lg text-center">
+          <i class="fas fa-leaf text-4xl mb-3"></i>
+          <h5 class="font-bold text-lg mb-2">Oferta de Otoño</h5>
+          <p class="text-sm mb-3">12% de descuento por 50 días</p>
+          <button class="btn btn-white" onclick="crearCampanaEstacional('otoño')">
+            <i class="fas fa-play"></i> Activar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Herramientas de Marketing -->
+  <div class="card-section">
+    <h4><i class="fas fa-tools"></i> Herramientas de Marketing</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h5 class="font-bold text-lg mb-4"><i class="fas fa-image"></i> Generador de Contenido</h5>
+        <p class="text-secondary mb-4">Genera contenido de marketing personalizado para cada apartamento</p>
+        <div class="space-y-3">
+          <select id="apartamentoSelect" class="form-input">
+            <option value="">Seleccionar apartamento</option>
+            {% for campana in campanas %}
+            <option value="{{campana.apartamento_id}}">Apartamento {{campana.apartamento_numero}}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-primary w-full" onclick="generarContenido()">
+            <i class="fas fa-magic"></i> Generar Contenido
+          </button>
+        </div>
+        <div id="contenidoGenerado" class="mt-4 hidden">
+          <!-- El contenido se generará aquí -->
+        </div>
+      </div>
+      
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h5 class="font-bold text-lg mb-4"><i class="fas fa-share-alt"></i> Compartir en Redes</h5>
+        <p class="text-secondary mb-4">Comparte promociones en redes sociales</p>
+        <div class="space-y-2">
+          <button class="btn btn-info w-full" onclick="compartirFacebook()">
+            <i class="fab fa-facebook"></i> Facebook
+          </button>
+          <button class="btn btn-info w-full" onclick="compartirTwitter()">
+            <i class="fab fa-twitter"></i> Twitter
+          </button>
+          <button class="btn btn-info w-full" onclick="compartirWhatsApp()">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="text-center p-6 mt-8 border-t">
+  <p class="text-secondary">© {{hoy.year}} Marketing - Sistema de Gestión Profesional</p>
+</footer>
+
+<script>
+// Crear promoción de descuento
+async function crearPromocion(apartamentoId, porcentaje) {
+  try {
+    const response = await fetch('/api/marketing/promocion/descuento', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        apartamento_id: apartamentoId,
+        porcentaje: porcentaje,
+        duracion: 30
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      toast('Promoción creada exitosamente', false);
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      toast('Error al crear promoción: ' + result.error, true);
+    }
+  } catch (error) {
+    toast('Error de conexión', true);
+  }
+}
+
+// Ver contenido de marketing
+async function verContenido(apartamentoId) {
+  try {
+    const response = await fetch(`/api/marketing/contenido/${apartamentoId}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      mostrarModalContenido(result.data);
+    } else {
+      toast('Error al cargar contenido: ' + result.error, true);
+    }
+  } catch (error) {
+    toast('Error de conexión', true);
+  }
+}
+
+// Crear campaña estacional
+async function crearCampanaEstacional(tipoEstacion) {
+  try {
+    const response = await fetch('/api/marketing/campana/estacional', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tipo_estacion: tipoEstacion
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      toast(`Campaña ${tipoEstacion} activada exitosamente`, false);
+    } else {
+      toast('Error al crear campaña: ' + result.error, true);
+    }
+  } catch (error) {
+    toast('Error de conexión', true);
+  }
+}
+
+// Generar contenido de marketing
+async function generarContenido() {
+  const apartamentoId = document.getElementById('apartamentoSelect').value;
+  if (!apartamentoId) {
+    toast('Selecciona un apartamento', true);
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/marketing/contenido/${apartamentoId}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      mostrarContenidoGenerado(result.data);
+    } else {
+      toast('Error al generar contenido: ' + result.error, true);
+    }
+  } catch (error) {
+    toast('Error de conexión', true);
+  }
+}
+
+// Mostrar contenido generado
+function mostrarContenidoGenerado(contenido) {
+  const div = document.getElementById('contenidoGenerado');
+  div.innerHTML = `
+    <div class="bg-gray-50 p-4 rounded-lg">
+      <h6 class="font-bold mb-2">${contenido.titulo}</h6>
+      <p class="text-sm text-secondary mb-3">${contenido.subtitulo}</p>
+      <p class="text-sm mb-3">${contenido.descripcion}</p>
+      <div class="space-y-1">
+        ${contenido.caracteristicas.map(c => `<div class="text-sm">• ${c}</div>`).join('')}
+      </div>
+      <div class="mt-3 p-2 bg-blue-100 rounded">
+        <p class="text-sm font-semibold text-blue-800">${contenido.llamada_accion}</p>
+      </div>
+      <div class="mt-2 flex flex-wrap gap-1">
+        ${contenido.hashtags.map(h => `<span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">${h}</span>`).join('')}
+      </div>
+    </div>
+  `;
+  div.classList.remove('hidden');
+}
+
+// Mostrar modal de contenido
+function mostrarModalContenido(contenido) {
+  // Implementar modal para mostrar contenido completo
+  alert(`Contenido para Apartamento:\n\n${contenido.titulo}\n\n${contenido.descripcion}\n\n${contenido.llamada_accion}`);
+}
+
+// Compartir en redes sociales
+function compartirFacebook() {
+  const url = encodeURIComponent(window.location.href);
+  const text = encodeURIComponent('¡Oportunidades únicas de alquiler!');
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank');
+}
+
+function compartirTwitter() {
+  const url = encodeURIComponent(window.location.href);
+  const text = encodeURIComponent('¡Oportunidades únicas de alquiler! #Apartamentos #Alquiler');
+  window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
+}
+
+function compartirWhatsApp() {
+  const text = encodeURIComponent('¡Oportunidades únicas de alquiler! Visita: ' + window.location.href);
+  window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
+// Toast simple
+function toast(msg, error = false) {
+  const el = document.createElement('div');
+  el.className = `message ${error ? 'error' : 'success'}`;
+  el.textContent = msg;
+  document.querySelector('.container').prepend(el);
+  setTimeout(() => {
+    el.style.transition = "opacity .5s ease, transform .5s ease";
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-6px)';
+    setTimeout(() => el.remove(), 500);
+  }, 2500);
+}
+</script>
+
+</body>
+</html>
+
+
+

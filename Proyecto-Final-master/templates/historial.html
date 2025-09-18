@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Historial de Actividades - Sistema de Apartamentos</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    /* =========================
+       🎨 ESTILOS PROFESIONALES PARA HISTORIAL
+       ========================= */
+    
+    body { 
+      padding-top: 80px; 
+      background: var(--bg-primary);
+      min-height: 100vh;
+    }
+    
+    @media (max-width: 768px) { 
+      body { padding-top: 70px; } 
+    }
+
+    .container { 
+      max-width: 1400px; 
+      margin: 0 auto; 
+      padding: 0 var(--space-4);
+    }
+
+    /* Header profesional */
+    .header-professional {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-light);
+      z-index: 1000;
+      padding: var(--space-4) 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .header-title h1 {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .header-subtitle {
+      color: var(--text-secondary);
+      font-size: var(--font-size-sm);
+      margin: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    /* Toolbar de filtros mejorada */
+    .filters-toolbar {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      margin: var(--space-6) 0;
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 1001;
+    }
+
+    .filters-content {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .search-section {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      position: relative;
+      z-index: 1002;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 300px;
+      padding: var(--space-3) var(--space-4);
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-base);
+      background: var(--bg-secondary);
+      transition: all var(--transition-normal);
+      position: relative;
+      z-index: 1002;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--brand-primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .stats-section {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .stat-badge {
+      background: var(--gradient-primary);
+      color: var(--text-inverse);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* Secciones de apartamento */
+    .apartment-section {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-2xl);
+      margin-bottom: var(--space-6);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-normal);
+      position: relative;
+    }
+
+    .apartment-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--gradient-primary);
+      opacity: 0;
+      transition: opacity var(--transition-normal);
+    }
+
+    .apartment-section:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--brand-primary);
+    }
+
+    .apartment-section:hover::before {
+      opacity: 1;
+    }
+
+    .apartment-header {
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      color: var(--text-inverse);
+      padding: var(--space-5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .apartment-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+      pointer-events: none;
+    }
+
+    .apartment-header::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .apartment-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      margin: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .apartment-subtitle {
+      font-size: var(--font-size-sm);
+      opacity: 0.9;
+      margin: var(--space-1) 0 0 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .apartment-content {
+      padding: var(--space-6);
+    }
+
+    /* Categorías de historial */
+    .history-category {
+      margin-bottom: var(--space-6);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      border: 1px solid var(--border-light);
+      transition: all var(--transition-normal);
+    }
+
+    .history-category:hover {
+      background: var(--bg-accent);
+      transform: translateX(4px);
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-3);
+      border-bottom: 2px solid var(--border-light);
+      position: relative;
+    }
+
+    .category-header::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 40px;
+      height: 2px;
+      background: var(--gradient-primary);
+      border-radius: 1px;
+    }
+
+    .category-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-lg);
+      color: var(--text-inverse);
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-normal);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .category-icon::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .category-icon:hover {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .category-icon.limpieza { 
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .category-icon.gas { 
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    .category-icon.pagos { 
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    .category-icon.solicitudes { 
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+    .category-icon.inquilinos { 
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .category-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .category-count {
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      color: var(--text-inverse);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-normal);
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .category-count:hover {
+      transform: scale(1.1);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Tablas profesionales */
+    .history-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+
+    .history-table thead {
+      background: var(--bg-accent);
+    }
+
+    .history-table th {
+      padding: var(--space-4);
+      text-align: left;
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      font-size: var(--font-size-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .history-table td {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-light);
+      color: var(--text-primary);
+      font-size: var(--font-size-sm);
+    }
+
+    .history-table tbody tr {
+      transition: all var(--transition-normal);
+    }
+
+    .history-table tbody tr:hover {
+      background: var(--bg-accent);
+      transform: scale(1.01);
+    }
+
+    .history-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Estados y badges */
+    .status-badge {
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-badge.pagado {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--brand-success);
+    }
+
+    .status-badge.pendiente {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--brand-warning);
+    }
+
+    .status-badge.vencido {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--brand-danger);
+    }
+
+    /* Estado vacío */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-8);
+      color: var(--text-secondary);
+    }
+
+    .empty-state i {
+      font-size: var(--font-size-4xl);
+      color: var(--text-muted);
+      margin-bottom: var(--space-4);
+    }
+
+    .empty-state h3 {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--space-2);
+    }
+
+    .empty-state p {
+      font-size: var(--font-size-sm);
+      margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .filters-content {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+      }
+      
+      .search-input {
+        min-width: auto;
+      }
+      
+      .stats-section {
+        justify-content: center;
+      }
+      
+      .header-content {
+        flex-direction: column;
+        gap: var(--space-3);
+        text-align: center;
+      }
+      
+      .apartment-content {
+        padding: var(--space-4);
+      }
+      
+      .history-table {
+        font-size: var(--font-size-xs);
+      }
+      
+      .history-table th,
+      .history-table td {
+        padding: var(--space-2);
+      }
+    }
+
+    /* Animaciones */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .apartment-section {
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .apartment-section:nth-child(2) { animation-delay: 0.1s; }
+    .apartment-section:nth-child(3) { animation-delay: 0.2s; }
+    .apartment-section:nth-child(4) { animation-delay: 0.3s; }
+  </style>
+</head>
+<body>
+<!-- Header Profesional -->
+<header class="header-professional">
+  <div class="header-content">
+    <div class="header-title">
+      <i class="fas fa-history"></i>
+      <div>
+        <h1>Historial de Actividades</h1>
+        <p class="header-subtitle">Registro completo de todas las operaciones — {{hoy.strftime('%d/%m/%Y')}}</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="/" class="btn btn-secondary">
+        <i class="fas fa-home"></i> Inicio
+      </a>
+      <a href="/dashboard" class="btn btn-primary">
+        <i class="fas fa-chart-line"></i> Dashboard
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- Toolbar de Filtros Profesional -->
+<div class="container">
+  <div class="filters-toolbar">
+    <div class="filters-content">
+      <div class="search-section">
+        <i class="fas fa-search" style="color: var(--text-secondary);"></i>
+      <input
+        id="search-input"
+        class="search-input"
+        type="search"
+          placeholder="Buscar por apartamento (ej: 1, 2, 3 o 'Apartamento 1')"
+        autocomplete="off"
+      />
+    </div>
+      <div class="stats-section">
+        <span id="result-count" class="stat-badge">Mostrando 0 de 0</span>
+        <button id="export-btn" class="btn btn-secondary" title="Exportar historial">
+          <i class="fas fa-download"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="no-results" class="empty-state" style="display:none;">
+    <i class="fas fa-search"></i>
+    <h3>No se encontraron resultados</h3>
+    <p>Intenta con otros términos de búsqueda o verifica la ortografía.</p>
+  </div>
+</div>
+
+<!-- Contenido Principal -->
+<main class="container" id="history-root">
+  {% if resumen %}
+  {% for item in resumen %}
+    <section class="apartment-section" data-apto="{{item.apto}}">
+      <!-- Header del Apartamento -->
+      <div class="apartment-header">
+        <h2 class="apartment-title">
+          <i class="fas fa-building"></i>
+          Apartamento {{item.apto}}
+        </h2>
+        <p class="apartment-subtitle">
+          Historial completo de actividades y operaciones
+        </p>
+      </div>
+
+      <div class="apartment-content">
+        <!-- Sección de Limpieza -->
+        <div class="history-category">
+          <div class="category-header">
+            <div class="category-icon limpieza">
+              <i class="fas fa-broom"></i>
+            </div>
+            <h3 class="category-title">Registro de Limpieza</h3>
+            <span class="category-count">{{item.limpieza|length if item.limpieza else 0}} registros</span>
+          </div>
+          
+      {% if item.limpieza %}
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th><i class="fas fa-calendar"></i> Fecha</th>
+                <th><i class="fas fa-door-open"></i> Habitación</th>
+                <th><i class="fas fa-clock"></i> Duración</th>
+                <th><i class="fas fa-comment"></i> Motivo</th>
+              </tr>
+            </thead>
+        <tbody>
+          {% for h in item.limpieza %}
+                <tr>
+                  <td>{{h.fecha.strftime('%d/%m/%Y %H:%M') if h.fecha else '-'}}</td>
+                  <td><span class="status-badge">{{h.cuarto}}</span></td>
+                  <td>{{h.minutos}} min</td>
+                  <td>{{h.motivo or '-'}}</td>
+                </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-broom"></i>
+            <h3>Sin registros de limpieza</h3>
+            <p>No hay actividades de limpieza registradas para este apartamento.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Sección de Gas -->
+        <div class="history-category">
+          <div class="category-header">
+            <div class="category-icon gas">
+              <i class="fas fa-fire"></i>
+            </div>
+            <h3 class="category-title">Registro de Gas</h3>
+            <span class="category-count">{{item.gas|length if item.gas else 0}} registros</span>
+          </div>
+          
+      {% if item.gas %}
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th><i class="fas fa-calendar"></i> Fecha</th>
+                <th><i class="fas fa-door-open"></i> Habitación</th>
+                <th><i class="fas fa-comment"></i> Nota</th>
+              </tr>
+            </thead>
+        <tbody>
+          {% for h in item.gas %}
+                <tr>
+                  <td>{{h.fecha.strftime('%d/%m/%Y %H:%M') if h.fecha else '-'}}</td>
+                  <td><span class="status-badge">{{h.cuarto}}</span></td>
+                  <td>{{h.nota or '-'}}</td>
+                </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-fire"></i>
+            <h3>Sin registros de gas</h3>
+            <p>No hay compras de gas registradas para este apartamento.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Sección de Pagos -->
+        <div class="history-category">
+          <div class="category-header">
+            <div class="category-icon pagos">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <h3 class="category-title">Registro de Pagos</h3>
+            <span class="category-count">{{item.pagos|length if item.pagos else 0}} registros</span>
+          </div>
+          
+      {% if item.pagos %}
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th><i class="fas fa-calendar"></i> Fecha</th>
+                <th><i class="fas fa-door-open"></i> Habitación</th>
+                <th><i class="fas fa-money-bill"></i> Monto</th>
+                <th><i class="fas fa-check-circle"></i> Estado</th>
+              </tr>
+            </thead>
+        <tbody>
+          {% for h in item.pagos %}
+                <tr>
+                  <td>{{h.fecha.strftime('%d/%m/%Y %H:%M') if h.fecha else '-'}}</td>
+                  <td><span class="status-badge">{{h.cuarto}}</span></td>
+                  <td><strong>${{ '%.2f'|format(h.monto) }}</strong></td>
+                  <td><span class="status-badge {{h.estado}}">{{h.estado|title}}</span></td>
+                </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-dollar-sign"></i>
+            <h3>Sin registros de pagos</h3>
+            <p>No hay pagos registrados para este apartamento.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Sección de Solicitudes de Pago -->
+        <div class="history-category">
+          <div class="category-header">
+            <div class="category-icon solicitudes">
+              <i class="fas fa-hand-holding-usd"></i>
+            </div>
+            <h3 class="category-title">Solicitudes de Pago</h3>
+            <span class="category-count">{{item.solicitudes|length if item.solicitudes else 0}} registros</span>
+          </div>
+          
+      {% if item.solicitudes %}
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th><i class="fas fa-calendar"></i> Fecha</th>
+                <th><i class="fas fa-door-open"></i> Habitación</th>
+                <th><i class="fas fa-comment"></i> Nota</th>
+                <th><i class="fas fa-money-bill"></i> Monto Sugerido</th>
+              </tr>
+            </thead>
+        <tbody>
+          {% for h in item.solicitudes %}
+                <tr>
+                  <td>{{h.fecha.strftime('%d/%m/%Y %H:%M') if h.fecha else '-'}}</td>
+                  <td><span class="status-badge">{{h.cuarto}}</span></td>
+                  <td>{{h.nota or '-'}}</td>
+                  <td><strong>${{ '%.2f'|format(h.monto_sugerido or 0) }}</strong></td>
+                </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-hand-holding-usd"></i>
+            <h3>Sin solicitudes de pago</h3>
+            <p>No hay solicitudes de pago registradas para este apartamento.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Sección de Movimiento de Inquilinos -->
+        <div class="history-category">
+          <div class="category-header">
+            <div class="category-icon inquilinos">
+              <i class="fas fa-users"></i>
+            </div>
+            <h3 class="category-title">Movimiento de Inquilinos</h3>
+            <span class="category-count">{{item.inquilinos|length if item.inquilinos else 0}} registros</span>
+          </div>
+          
+      {% if item.inquilinos %}
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th><i class="fas fa-door-open"></i> Habitación</th>
+                <th><i class="fas fa-exchange-alt"></i> Evento</th>
+                <th><i class="fas fa-calendar"></i> Fecha</th>
+                <th><i class="fas fa-user"></i> Nombre</th>
+              </tr>
+            </thead>
+        <tbody>
+          {% for h in item.inquilinos %}
+            <tr>
+                  <td><span class="status-badge">{{h.cuarto}}</span></td>
+                  <td>
+                    <span class="status-badge {{ 'pagado' if h.get('fecha_asignacion') else 'pendiente' }}">
+                      {{ 'Asignación' if h.get('fecha_asignacion') else 'Salida' }}
+                    </span>
+                  </td>
+              <td>{{ (h.get('fecha_asignacion') or h.get('fecha_salida')).strftime('%d/%m/%Y %H:%M') if (h.get('fecha_asignacion') or h.get('fecha_salida')) else '-' }}</td>
+                  <td><strong>{{h.nombre}}</strong></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <h3>Sin movimientos de inquilinos</h3>
+            <p>No hay registros de asignaciones o salidas de inquilinos.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  {% endfor %}
+  {% else %}
+    <!-- Estado vacío cuando no hay apartamentos con registros -->
+    <div class="empty-state" style="margin-top: var(--space-12);">
+      <i class="fas fa-history" style="font-size: 4rem; color: var(--text-muted); margin-bottom: var(--space-6);"></i>
+      <h2 style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); margin-bottom: var(--space-4);">
+        No hay historial disponible
+      </h2>
+      <p style="font-size: var(--font-size-lg); color: var(--text-secondary); margin-bottom: var(--space-6);">
+        Aún no se han registrado actividades en ningún apartamento.
+      </p>
+      <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+        <a href="/" class="btn btn-primary">
+          <i class="fas fa-home"></i> Ir al Inicio
+        </a>
+        <a href="/dashboard" class="btn btn-secondary">
+          <i class="fas fa-chart-line"></i> Ver Dashboard
+        </a>
+      </div>
+    </div>
+  {% endif %}
+</main>
+
+<!-- JavaScript Profesional -->
+<script>
+(function(){
+  // Elementos del DOM
+  const input = document.getElementById('search-input');
+  const root = document.getElementById('history-root');
+  const sections = Array.from(root.querySelectorAll('section[data-apto]'));
+  const countEl = document.getElementById('result-count');
+  const noResultsEl = document.getElementById('no-results');
+  const exportBtn = document.getElementById('export-btn');
+
+  const total = sections.length;
+  let currentFilter = '';
+
+  // Inicialización
+  if (total > 0) {
+  updateCount(total);
+    initializeAnimations();
+  } else {
+    // No hay apartamentos con registros
+    countEl.textContent = 'No hay apartamentos con registros';
+    countEl.style.background = 'var(--brand-warning)';
+  }
+
+  // Función para extraer números del texto de búsqueda
+  function extractNumbers(q) {
+    return new Set((q.toLowerCase().match(/\d+/g) || []));
+  }
+
+  // Función principal de filtrado
+  function applyFilter() {
+    const q = input.value.trim();
+    const wanted = extractNumbers(q);
+    let shown = 0;
+
+    sections.forEach((sec, index) => {
+      const apto = (sec.getAttribute('data-apto') || '').toString();
+      const match = wanted.size === 0 ? true : wanted.has(apto);
+
+      if (match) {
+        sec.style.display = '';
+        sec.style.animationDelay = `${index * 0.1}s`;
+        shown++;
+      } else {
+        sec.style.display = 'none';
+      }
+    });
+
+    updateCount(shown);
+    noResultsEl.style.display = shown ? 'none' : '';
+    currentFilter = q;
+  }
+
+  // Actualizar contador con animación
+  function updateCount(shown) {
+    countEl.textContent = `Mostrando ${shown} de ${total} apartamentos`;
+    
+    // Animación del badge
+    countEl.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+      countEl.style.transform = 'scale(1)';
+    }, 200);
+  }
+
+  // Debounce para rendimiento
+  let debounceTimer;
+  function onInput() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(applyFilter, 200);
+  }
+
+  // Función de exportación
+  function exportHistory() {
+    const visibleSections = sections.filter(sec => sec.style.display !== 'none');
+    const data = visibleSections.map(sec => {
+      const apto = sec.getAttribute('data-apto');
+      const title = sec.querySelector('.apartment-title').textContent.trim();
+      return {
+        apartamento: apto,
+        titulo: title,
+        contenido: sec.textContent
+      };
+    });
+
+    const csvContent = [
+      ['Apartamento', 'Título', 'Contenido'],
+      ...data.map(item => [item.apartamento, item.titulo, `"${item.contenido.replace(/"/g, '""')}"`])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `historial_apartamentos_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Feedback visual
+    exportBtn.innerHTML = '<i class="fas fa-check"></i> Exportado';
+    exportBtn.style.background = 'var(--brand-success)';
+    setTimeout(() => {
+      exportBtn.innerHTML = '<i class="fas fa-download"></i>';
+      exportBtn.style.background = '';
+    }, 2000);
+  }
+
+  // Inicializar animaciones
+  function initializeAnimations() {
+    sections.forEach((sec, index) => {
+      sec.style.animationDelay = `${index * 0.1}s`;
+    });
+  }
+
+  // Event Listeners
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      clearTimeout(debounceTimer);
+      applyFilter();
+    }
+  });
+
+  input.addEventListener('input', onInput);
+  input.addEventListener('paste', () => setTimeout(applyFilter, 100));
+
+  exportBtn.addEventListener('click', exportHistory);
+
+  // Cargar filtro desde URL
+  const params = new URLSearchParams(location.search);
+  if (params.has('q')) {
+    input.value = params.get('q');
+    applyFilter();
+  } else {
+    applyFilter(); // Aplicar filtro inicial
+  }
+
+  // Funcionalidad de teclado
+  document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + F para enfocar búsqueda
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      input.focus();
+    }
+    
+    // Escape para limpiar búsqueda
+    if (e.key === 'Escape') {
+      input.value = '';
+      applyFilter();
+      input.blur();
+    }
+  });
+
+  // Efectos visuales adicionales
+  input.addEventListener('focus', () => {
+    input.parentElement.style.transform = 'scale(1.02)';
+  });
+
+  input.addEventListener('blur', () => {
+    input.parentElement.style.transform = 'scale(1)';
+  });
+
+  // Mostrar estadísticas en tiempo real
+  function updateStats() {
+    const totalRecords = document.querySelectorAll('.history-table tbody tr').length;
+    const totalCategories = document.querySelectorAll('.history-category').length;
+    
+    // Actualizar badge con más información
+    if (currentFilter) {
+      countEl.textContent = `${totalRecords} registros encontrados`;
+    } else {
+      countEl.textContent = `${totalRecords} registros en ${totalCategories} categorías`;
+    }
+  }
+
+  // Actualizar estadísticas después del filtrado
+  const originalApplyFilter = applyFilter;
+  applyFilter = function() {
+    originalApplyFilter();
+    setTimeout(updateStats, 100);
+  };
+
+  // Inicializar estadísticas
+  updateStats();
+
+  console.log('🎯 Historial profesional cargado correctamente');
+})();
+</script>
+</body>
+</html>

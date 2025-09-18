@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analytics - Gestión de Apartamentos</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <h1><i class="fas fa-chart-bar"></i> Analytics Comercial</h1>
+    <p class="subtitle">Análisis de rentabilidad y oportunidades de mejora</p>
+    
+    <!-- Navegación rápida -->
+    <div class="nav-quick">
+      <a href="/" class="btn btn-primary">
+        <i class="fas fa-home"></i> Inicio
+      </a>
+      <a href="/dashboard" class="btn btn-secondary">
+        <i class="fas fa-chart-line"></i> Dashboard
+      </a>
+      <a href="/marketing" class="btn btn-warning">
+        <i class="fas fa-bullhorn"></i> Marketing
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <div class="message {{cat}}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- KPIs Principales -->
+  <div class="metrics-grid">
+    <div class="metric-card" style="background: var(--gradient-primary); color: white;">
+      <div class="metric-value">{{reporte.kpis_principales.ingresos_mes_actual|moneda}}</div>
+      <div class="metric-label">Ingresos del Mes</div>
+    </div>
+    <div class="metric-card" style="background: var(--gradient-success); color: white;">
+      <div class="metric-value">{{reporte.kpis_principales.tasa_ocupacion_promedio}}%</div>
+      <div class="metric-label">Ocupación Promedio</div>
+    </div>
+    <div class="metric-card" style="background: var(--gradient-warning); color: white;">
+      <div class="metric-value">{{reporte.kpis_principales.roi_promedio}}%</div>
+      <div class="metric-label">ROI Promedio</div>
+    </div>
+    <div class="metric-card" style="background: var(--gradient-info); color: white;">
+      <div class="metric-value">{{reporte.prediccion_ingresos.prediccion_ingresos|moneda}}</div>
+      <div class="metric-label">Predicción Próximo Mes</div>
+    </div>
+  </div>
+
+  <!-- Análisis Comparativo -->
+  <div class="card-section">
+    <h4><i class="fas fa-chart-pie"></i> Análisis Comparativo de Apartamentos</h4>
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Apartamento</th>
+            <th>Ocupación</th>
+            <th>ROI</th>
+            <th>Ingresos Reales</th>
+            <th>Score Rentabilidad</th>
+            <th>Puntualidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for analisis in reporte.analisis_comparativo.analisis_detallado %}
+          <tr>
+            <td><strong>Apartamento {{analisis.numero}}</strong></td>
+            <td>
+              <div class="flex items-center gap-2">
+                <span class="status-badge {% if analisis.tasa_ocupacion > 80 %}success{% elif analisis.tasa_ocupacion > 60 %}warning{% else %}danger{% endif %}">
+                  {{analisis.tasa_ocupacion}}%
+                </span>
+                <span class="text-sm text-secondary">({{analisis.cuartos_activos}}/{{analisis.cuartos_totales}})</span>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge {% if analisis.roi_estimado > 20 %}success{% elif analisis.roi_estimado > 10 %}warning{% else %}danger{% endif %}">
+                {{analisis.roi_estimado}}%
+              </span>
+            </td>
+            <td class="font-semibold">{{analisis.ingresos_reales|moneda}}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-16 bg-gray-200 rounded-full h-2">
+                  <div class="bg-blue-600 h-2 rounded-full" style="width: {{analisis.rentabilidad_score}}%"></div>
+                </div>
+                <span class="text-sm">{{analisis.rentabilidad_score}}/100</span>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge {% if analisis.pagos_analisis.puntualidad > 80 %}success{% elif analisis.pagos_analisis.puntualidad > 60 %}warning{% else %}danger{% endif %}">
+                {{analisis.pagos_analisis.puntualidad}}%
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Predicción de Ingresos -->
+  <div class="card-section">
+    <h4><i class="fas fa-crystal-ball"></i> Predicción de Ingresos</h4>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="stat-item">
+        <div class="stat-value text-primary">{{reporte.prediccion_ingresos.prediccion_ingresos|moneda}}</div>
+        <div class="stat-label">Próximo Mes</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value text-success">{{reporte.prediccion_ingresos.tendencia_ocupacion}}%</div>
+        <div class="stat-label">Tendencia Ocupación</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value text-info">{{reporte.prediccion_ingresos.confianza|title}}</div>
+        <div class="stat-label">Confianza</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Oportunidades de Mejora -->
+  <div class="card-section">
+    <h4><i class="fas fa-lightbulb"></i> Oportunidades de Mejora</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% for oportunidad in reporte.oportunidades_mejora %}
+      <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="status-badge {% if oportunidad.prioridad == 'alta' %}danger{% elif oportunidad.prioridad == 'media' %}warning{% else %}success{% endif %}">
+              {{oportunidad.prioridad|title}}
+            </span>
+            <span class="text-sm text-secondary">{{oportunidad.tipo|title}}</span>
+          </div>
+          <i class="fas fa-{{'exclamation-triangle' if oportunidad.prioridad == 'alta' else 'info-circle'}} text-{{'red' if oportunidad.prioridad == 'alta' else 'blue'}}"></i>
+        </div>
+        
+        <h5 class="font-semibold text-primary mb-2">Apartamento {{oportunidad.apartamento}}</h5>
+        <p class="text-secondary mb-3">{{oportunidad.descripcion}}</p>
+        
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-success">
+            Impacto: {{oportunidad.impacto_potencial|moneda}}
+          </span>
+          <span class="text-xs text-secondary">{{oportunidad.accion_sugerida}}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recomendaciones -->
+  <div class="card-section">
+    <h4><i class="fas fa-star"></i> Recomendaciones Estratégicas</h4>
+    <div class="space-y-3">
+      {% for recomendacion in reporte.recomendaciones %}
+      <div class="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <i class="fas fa-check-circle text-blue-600 mt-1"></i>
+        <p class="text-blue-800">{{recomendacion}}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Gráfico de Rentabilidad -->
+  <div class="card-section">
+    <h4><i class="fas fa-chart-line"></i> Gráfico de Rentabilidad por Apartamento</h4>
+    <div class="bg-white p-6 rounded-lg">
+      <canvas id="rentabilidadChart" width="400" height="200"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<footer class="text-center p-6 mt-8 border-t">
+  <p class="text-secondary">© {{hoy.year}} Analytics - Sistema de Gestión Profesional</p>
+</footer>
+
+<script>
+// Gráfico de rentabilidad
+const ctx = document.getElementById('rentabilidadChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: [
+      {% for analisis in reporte.analisis_comparativo.analisis_detallado %}
+        'Apto {{analisis.numero}}'{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ],
+    datasets: [{
+      label: 'Score de Rentabilidad',
+      data: [
+        {% for analisis in reporte.analisis_comparativo.analisis_detallado %}
+          {{analisis.rentabilidad_score}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      backgroundColor: [
+        {% for analisis in reporte.analisis_comparativo.analisis_detallado %}
+          '{% if analisis.rentabilidad_score > 80 %}#10b981{% elif analisis.rentabilidad_score > 60 %}#f59e0b{% else %}#ef4444{% endif %}'{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      borderColor: '#3b82f6',
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          callback: function(value) {
+            return value + '%';
+          }
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return 'Rentabilidad: ' + context.parsed.y + '%';
+          }
+        }
+      }
+    }
+  }
+});
+
+// Auto-refresh cada 5 minutos
+setInterval(() => {
+  location.reload();
+}, 300000);
+</script>
+
+</body>
+</html>
+
+
+

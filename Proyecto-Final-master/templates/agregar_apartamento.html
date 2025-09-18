@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Apartamento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<header>
+    <h1>Agregar Nuevo Apartamento</h1>
+</header>
+
+<div class="container">
+    <form method="POST">
+        <label for="numero">Número del Apartamento:</label>
+        <input type="number" id="numero" name="numero" required>
+
+        <label for="alquiler">Alquiler Mensual:</label>
+        <input type="number" id="alquiler" name="alquiler" required>
+
+        <button type="submit">Agregar Apartamento</button>
+    </form>
+
+    <a href="{{ url_for('index') }}">Volver al inicio</a>
+</div>
+
+<footer>
+    <p>by Carlos C. | Gestión de Apartamentos</p>
+</footer>
+
+</body>
+</html>

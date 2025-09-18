@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notificaciones - Gestión de Apartamentos</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <style>
+    .notification-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg-accent);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+    }
+    .notification-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .notification-item.leida {
+      opacity: 0.6;
+      background: var(--bg);
+    }
+    .notification-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .notification-icon.pago_vencido { background: var(--danger); }
+    .notification-icon.gas_agotado { background: var(--warn); }
+    .notification-icon.limpieza_pendiente { background: var(--info); }
+    .notification-icon.solicitud_pago { background: var(--brand); }
+    .notification-content {
+      flex: 1;
+    }
+    .notification-title {
+      font-weight: 600;
+      margin: 0 0 4px;
+      color: var(--text);
+    }
+    .notification-message {
+      color: var(--text-muted);
+      margin: 0 0 8px;
+      line-height: 1.4;
+    }
+    .notification-meta {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .notification-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .priority-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .priority-badge.critica { background: #fecaca; color: #991b1b; }
+    .priority-badge.alta { background: #fef3c7; color: #92400e; }
+    .priority-badge.media { background: #dbeafe; color: #1e40af; }
+    .priority-badge.baja { background: #dcfce7; color: #14532d; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-tab {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg-accent);
+      color: var(--text);
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .filter-tab.active {
+      background: var(--brand);
+      color: white;
+      border-color: var(--brand);
+    }
+    .filter-tab:hover {
+      background: var(--brand);
+      color: white;
+      border-color: var(--brand);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1><i class="fas fa-bell"></i> Notificaciones</h1>
+  <p class="muted" style="margin-top:8px;">Centro de alertas y notificaciones - {{hoy.strftime('%d/%m/%Y')}}</p>
+  
+  <div style="margin-top:12px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+    <a href="/" class="btn-link" style="background:var(--brand); color:white; padding:8px 16px; border-radius:20px; text-decoration:none;">
+      <i class="fas fa-home"></i> Inicio
+    </a>
+    <a href="/dashboard" class="btn-link" style="background:var(--brand-2); color:white; padding:8px 16px; border-radius:20px; text-decoration:none;">
+      <i class="fas fa-chart-line"></i> Dashboard
+    </a>
+    <a href="/historial" class="btn-link" style="background:var(--info); color:white; padding:8px 16px; border-radius:20px; text-decoration:none;">
+      <i class="fas fa-history"></i> Historial
+    </a>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Estadísticas de notificaciones -->
+  <div class="stats-grid">
+    <div class="card" style="text-align: center; background: linear-gradient(135deg, var(--danger), #ef4444); color: white;">
+      <h3 style="margin: 0; font-size: 2rem;">{{estadisticas.total_notificaciones}}</h3>
+      <p style="margin: 4px 0 0; opacity: 0.9;">Total Notificaciones</p>
+    </div>
+    <div class="card" style="text-align: center; background: linear-gradient(135deg, var(--warn), #f59e0b); color: white;">
+      <h3 style="margin: 0; font-size: 2rem;">{{estadisticas.pagos_vencidos}}</h3>
+      <p style="margin: 4px 0 0; opacity: 0.9;">Pagos Vencidos</p>
+    </div>
+    <div class="card" style="text-align: center; background: linear-gradient(135deg, var(--info), #0ea5e9); color: white;">
+      <h3 style="margin: 0; font-size: 2rem;">{{estadisticas.gas_agotado}}</h3>
+      <p style="margin: 4px 0 0; opacity: 0.9;">Gas Agotado</p>
+    </div>
+    <div class="card" style="text-align: center; background: linear-gradient(135deg, var(--brand), #2563eb); color: white;">
+      <h3 style="margin: 0; font-size: 2rem;">{{estadisticas.solicitudes_pendientes}}</h3>
+      <p style="margin: 4px 0 0; opacity: 0.9;">Solicitudes Pendientes</p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filter-tabs">
+    <a href="#" class="filter-tab active" data-filter="all">
+      <i class="fas fa-list"></i> Todas ({{notificaciones|length}})
+    </a>
+    <a href="#" class="filter-tab" data-filter="pago_vencido">
+      <i class="fas fa-dollar-sign"></i> Pagos ({{estadisticas.pagos_vencidos}})
+    </a>
+    <a href="#" class="filter-tab" data-filter="gas_agotado">
+      <i class="fas fa-fire"></i> Gas ({{estadisticas.gas_agotado}})
+    </a>
+    <a href="#" class="filter-tab" data-filter="limpieza_pendiente">
+      <i class="fas fa-broom"></i> Limpieza ({{estadisticas.limpieza_pendiente}})
+    </a>
+    <a href="#" class="filter-tab" data-filter="solicitud_pago">
+      <i class="fas fa-file-invoice"></i> Solicitudes ({{estadisticas.solicitudes_pendientes}})
+    </a>
+  </div>
+
+  <!-- Lista de notificaciones -->
+  <div id="notifications-list">
+    {% if notificaciones|length > 0 %}
+      {% for notif in notificaciones %}
+      <div class="notification-item" data-type="{{notif.tipo}}" data-priority="{{notif.prioridad}}">
+        <div class="notification-icon {{notif.tipo}}">
+          {% if notif.tipo == 'pago_vencido' %}
+            <i class="fas fa-dollar-sign"></i>
+          {% elif notif.tipo == 'gas_agotado' %}
+            <i class="fas fa-fire"></i>
+          {% elif notif.tipo == 'limpieza_pendiente' %}
+            <i class="fas fa-broom"></i>
+          {% elif notif.tipo == 'solicitud_pago' %}
+            <i class="fas fa-file-invoice"></i>
+          {% else %}
+            <i class="fas fa-bell"></i>
+          {% endif %}
+        </div>
+        
+        <div class="notification-content">
+          <h4 class="notification-title">{{notif.titulo}}</h4>
+          <p class="notification-message">{{notif.mensaje}}</p>
+          <div class="notification-meta">
+            <span><i class="fas fa-clock"></i> {{notif.fecha}}</span>
+            {% if notif.cuarto_id %}
+              <span><i class="fas fa-door-open"></i> Cuarto {{notif.cuarto_id}}</span>
+            {% endif %}
+            {% if notif.apartamento_id %}
+              <span><i class="fas fa-building"></i> Apto {{notif.apartamento_id}}</span>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div class="notification-actions">
+          <span class="priority-badge {{notif.prioridad}}">{{notif.prioridad}}</span>
+          <button class="btn-ghost" onclick="marcarLeida({{notif.id}})" title="Marcar como leída">
+            <i class="fas fa-check"></i>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-bell-slash"></i>
+        <h3>¡No hay notificaciones!</h3>
+        <p>Todo está bajo control. No hay alertas pendientes en este momento.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Filtros de notificaciones
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    e.preventDefault();
+    
+    // Actualizar tabs activos
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    
+    // Filtrar notificaciones
+    const filter = tab.dataset.filter;
+    const notifications = document.querySelectorAll('.notification-item');
+    
+    notifications.forEach(notification => {
+      if (filter === 'all' || notification.dataset.type === filter) {
+        notification.style.display = 'flex';
+      } else {
+        notification.style.display = 'none';
+      }
+    });
+  });
+});
+
+// Marcar notificación como leída
+async function marcarLeida(notifId) {
+  try {
+    const response = await fetch(`/api/notificaciones/${notifId}/marcar-leida`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.ok) {
+      // Marcar visualmente como leída
+      const notification = document.querySelector(`[onclick="marcarLeida(${notifId})"]`).closest('.notification-item');
+      notification.classList.add('leida');
+      
+      // Mostrar toast de confirmación
+      showToast('Notificación marcada como leída', 'success');
+      
+      // Actualizar contador si existe
+      updateNotificationCount();
+    } else {
+      showToast('Error al marcar notificación', 'error');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('Error de conexión', 'error');
+  }
+}
+
+// Función para mostrar toasts
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = 'message';
+  toast.textContent = message;
+  
+  if (type === 'error') {
+    toast.style.background = 'var(--danger)';
+  } else if (type === 'success') {
+    toast.style.background = 'var(--ok)';
+  }
+  
+  document.querySelector('.container').prepend(toast);
+  
+  setTimeout(() => {
+    toast.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-6px)';
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+}
+
+// Actualizar contador de notificaciones (si está en el header)
+function updateNotificationCount() {
+  const countElement = document.querySelector('.notification-count');
+  if (countElement) {
+    const currentCount = parseInt(countElement.textContent) || 0;
+    countElement.textContent = Math.max(0, currentCount - 1);
+  }
+}
+
+// Auto-refresh cada 30 segundos
+setInterval(() => {
+  location.reload();
+}, 30000);
+</script>
+
+</body>
+</html>
+
+
+

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestión de Apartamentos</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+  <h1>Gestión de Apartamentos</h1>
+    <p class="subtitle">Semana ISO {{hoy.isocalendar()[1]}} — {{hoy.strftime('%d/%m/%Y')}}</p>
+    
+    <!-- Navegación rápida -->
+    <div class="nav-quick">
+      <a href="/dashboard" class="btn btn-primary">
+        <i class="fas fa-chart-line"></i> Dashboard
+      </a>
+      <a href="/analytics" class="btn btn-success">
+        <i class="fas fa-analytics"></i> Analytics
+      </a>
+      <a href="/marketing" class="btn btn-warning">
+        <i class="fas fa-bullhorn"></i> Marketing
+      </a>
+      <a href="/notificaciones" class="btn btn-info" style="position:relative;">
+        <i class="fas fa-bell"></i> Notificaciones
+        {% if notificaciones_pendientes|length > 0 %}
+          <span class="notification-badge">{{notificaciones_pendientes|length}}</span>
+        {% endif %}
+      </a>
+      <a href="/historial" class="btn btn-secondary">
+        <i class="fas fa-history"></i> Historial
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <div class="message">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Panel de métricas rápidas -->
+  <div class="metrics-grid">
+    <div class="metric-card" style="background: var(--gradient-primary); color: white;">
+      <div class="metric-value">{{metricas.tasa_ocupacion}}%</div>
+      <div class="metric-label">Ocupación</div>
+    </div>
+    <div class="metric-card" style="background: var(--gradient-success); color: white;">
+      <div class="metric-value">{{metricas.ingresos_mes_actual|moneda}}</div>
+      <div class="metric-label">Ingresos del mes</div>
+    </div>
+    <div class="metric-card" style="background: var(--gradient-warning); color: white;">
+      <div class="metric-value">{{metricas.ingresos_pendientes|moneda}}</div>
+      <div class="metric-label">Pendientes</div>
+    </div>
+    <div class="metric-card" style="background: var(--gradient-danger); color: white;">
+      <div class="metric-value">{{metricas.alertas_criticas + metricas.alertas_altas}}</div>
+      <div class="metric-label">Alertas urgentes</div>
+    </div>
+  </div>
+
+  <!-- Alertas urgentes -->
+  {% if alertas_urgentes|length > 0 %}
+  <div class="alert-banner">
+    <h3><i class="fas fa-exclamation-triangle"></i> Alertas Urgentes</h3>
+    <div class="alert-list">
+      {% for alerta in alertas_urgentes[:5] %}
+        <span class="alert-item">
+          {{alerta.titulo}}
+        </span>
+      {% endfor %}
+      {% if alertas_urgentes|length > 5 %}
+        <span class="alert-item">
+          +{{alertas_urgentes|length - 5}} más
+        </span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- buscador -->
+  <div class="search-container">
+    <i class="fas fa-search search-icon"></i>
+  <input id="search-input" class="search-input" type="search" placeholder="Buscar apartamento (ej: Apartamento 1, 2, 3...)" />
+  </div>
+
+  <!-- Botón flotante para agregar apartamento -->
+  <div class="floating-add-btn">
+    <button class="btn btn-primary" onclick="abrirModalCrearApartamento()" title="Agregar Apartamento">
+      <i class="fas fa-plus"></i>
+    </button>
+  </div>
+
+  <div class="apartamentos" id="apartamentos-container">
+    {% for item in contexto %}
+      {% set apto = item.apto %}
+      <div class="apartamento-card" data-apto="{{apto.numero}}">
+        <div class="apartamento-header">
+          <h3>Apartamento {{apto.numero}}</h3>
+          <p>Renta base: {{apto.renta_base|moneda}}</p>
+          <div class="renta-highlight">{{apto.renta_base|moneda}}/mes</div>
+        </div>
+
+        <!-- Estadísticas rápidas del apartamento -->
+        <div class="apartamento-stats">
+          <div class="stat-item">
+            <div class="stat-value">{{item.apto_data.cuartos_activos}}</div>
+            <div class="stat-label">Ocupados</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{item.apto_data.cuartos_libres}}</div>
+            <div class="stat-label">Disponibles</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{item.total|moneda}}</div>
+            <div class="stat-label">Pendientes</div>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <h4><i class="fas fa-broom"></i> Limpieza de esta semana</h4>
+          <div class="limpieza-controls">
+            <div class="status">
+              {% if item.limpieza_actual %}
+                <span class="status-badge success">Hab. {{item.limpieza_actual}}</span>
+              {% else %}
+                <span class="status-badge danger">Sin inquilinos</span>
+              {% endif %}
+            </div>
+            <form class="form-inline" action="/limpieza/cerrar/{{apto.numero}}" method="post">
+              <input type="number" min="5" step="5" name="minutos" value="30" class="form-input" />
+              <input type="text" name="motivo" placeholder="motivo/nota (opcional)" class="form-input" />
+              <button type="button" class="btn btn-success" data-marcar-limpieza data-apto="{{apto.numero}}" data-cuarto="{{item.limpieza_actual or 1}}">Marcar hecha</button>
+            </form>
+          </div>
+          <details style="margin-top:8px;">
+            <summary class="muted">Marcar limpieza manual / swap</summary>
+            <form class="inline" action="/limpieza/marcar/{{apto.numero}}/1" method="post" onsubmit="this.action=this.action.replace('1', this.querySelector('[name=cuarto]').value)">
+              <label>Hab.</label>
+              <input type="number" name="cuarto" min="1" max="6" value="1"/>
+              <input type="number" min="5" step="5" name="minutos" value="30" />
+              <input type="text" name="motivo" placeholder="nota"/>
+              <button type="submit">Marcar</button>
+            </form>
+            <form class="inline" action="/limpieza/swap/{{apto.numero}}" method="post" style="margin-top:6px">
+              <label>Swap</label>
+              <input type="number" name="cuarto_a" min="1" max="6" placeholder="A"/>
+              <input type="number" name="cuarto_b" min="1" max="6" placeholder="B"/>
+              <input type="text" name="motivo" placeholder="motivo"/>
+              <button type="submit">Registrar</button>
+            </form>
+          </details>
+        </div>
+
+        <div class="card-section">
+          <h4><i class="fas fa-fire"></i> Próximo gas</h4>
+          <div class="gas-controls">
+            <div class="status">
+              {% if item.gas_siguiente %}
+                <span class="status-badge success">Hab. {{item.gas_siguiente}}</span>
+              {% else %}
+                <span class="status-badge danger">Sin inquilinos</span>
+              {% endif %}
+            </div>
+            <form class="form-inline" action="/gas/registrar/{{apto.numero}}" method="post">
+              <input type="text" name="nota" placeholder="nota (opcional)" class="form-input"/>
+              <button type="button" class="btn btn-warning" data-registrar-gas data-apto="{{apto.numero}}" data-cuarto="{{item.gas_siguiente or 1}}">Registrar compra</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <h4><i class="fas fa-door-open"></i> Disponibilidad / Renta por habitación</h4>
+          <div class="table-container">
+            <table class="table">
+            <thead>
+              <tr><th>Hab.</th><th>Estado</th><th>Inquilino</th><th>Renta</th><th>Acciones</th><th>Pago</th></tr>
+            </thead>
+            <tbody>
+            {% for c in apto.cuartos %}
+              {% set dias_sin_pago = (hoy - c.ultimo_pago).days if c.ultimo_pago else 999 %}
+              {% set dias_sin_gas = (hoy - c.gas_ultimo).days if c.gas_ultimo else 999 %}
+              {% set dias_sin_limpieza = (hoy - c.limpieza_ultima).days if c.limpieza_ultima else 999 %}
+              {% set tiene_alertas = dias_sin_pago > 5 or dias_sin_gas > 7 or dias_sin_limpieza > 2 %}
+              <tr data-cuarto="{{c.numero}}" {% if tiene_alertas %}class="alert-row"{% endif %}>
+                <td>
+                  #{{c.numero}}
+                  {% if tiene_alertas %}
+                    <i class="fas fa-exclamation-triangle" style="color:var(--warn); margin-left:4px;" title="Requiere atención"></i>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if c.activo %}
+                    {% if dias_sin_pago > 5 %}
+                      <span class="estado-badge vencido">
+                        Ocupado <i class="fas fa-clock"></i>
+                      </span>
+                    {% else %}
+                      <span class="estado-badge ocupado">Ocupado</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="estado-badge libre">Libre</span>
+                  {% endif %}
+                </td>
+                <td class="col-inquilino">{{c.inquilino or '-'}}</td>
+                <td class="col-renta">
+                  {{c.renta|moneda}}
+                  {% if c.activo and dias_sin_pago > 5 %}
+                    <br><small style="color:var(--danger);">Vencido hace {{dias_sin_pago}} días</small>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="flex gap-2">
+                    <button class="btn btn-secondary" data-open-modal data-apto="{{apto.numero}}" data-cuarto="{{c.numero}}" data-inquilino="{{c.inquilino or ''}}" data-renta="{{c.renta or apto.renta_base}}">Asignar/Editar</button>
+                    <button class="btn btn-danger" data-liberar data-apto="{{apto.numero}}" data-cuarto="{{c.numero}}">Liberar</button>
+                  </div>
+                </td>
+                <td>
+                  <div class="flex gap-2">
+                    <button class="btn btn-success" data-registrar-pago data-apto="{{apto.numero}}" data-cuarto="{{c.numero}}" data-monto="{{c.renta or apto.renta_base}}">Registrar pago</button>
+                    <button class="btn btn-link" data-solicitar-pago data-apto="{{apto.numero}}" data-cuarto="{{c.numero}}">Solicitar</button>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-section">
+          <h4><i class="fas fa-dollar-sign"></i> Pagos pendientes este mes</h4>
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-secondary">Total pendiente:</span>
+            <span class="font-bold text-primary">{{item.total|moneda}}</span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {% if item.pendientes %}
+              {% for p in item.pendientes %}
+                <span class="status-badge danger">Hab. {{p.cuarto}} — {{p.renta|moneda}}</span>
+              {% endfor %}
+            {% else %}
+              <span class="status-badge success">Todos al día</span>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<footer class="text-center p-6 mt-8 border-t">
+  <p class="text-secondary">© {{hoy.year}} Gestión de Apartamentos - Sistema Profesional</p>
+</footer>
+
+<!-- MODAL Asignar/Editar inquilino -->
+<div class="modal-backdrop" id="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-header">
+      <h3 id="modal-title">Asignar / Editar inquilino</h3>
+    </div>
+    <form id="modal-form">
+      <div class="modal-body">
+      <input type="hidden" name="apto" />
+      <input type="hidden" name="cuarto" />
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input type="text" name="nombre" placeholder="Nombre del inquilino" required class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Renta (USD)</label>
+          <input type="number" name="renta" step="1" min="0" placeholder="Renta" required class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de Contrato</label>
+          <select name="tipo_contrato" class="form-input" required>
+            <option value="mensual">Mensual (30 días)</option>
+            <option value="quincenal">Quincenal (15 días)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="modal-close">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL Crear Apartamento -->
+<div class="modal-backdrop" id="modal-crear-apartamento" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-crear-title">
+    <div class="modal-header">
+      <h3 id="modal-crear-title"><i class="fas fa-building"></i> Crear Nuevo Apartamento</h3>
+    </div>
+    <form id="form-crear-apartamento">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Número del Apartamento *</label>
+          <input type="number" name="numero" placeholder="Ej: 1, 2, 3..." required class="form-input" min="1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Renta Base (USD) *</label>
+          <input type="number" name="renta_base" step="0.01" min="0" placeholder="Ej: 500.00" required class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dirección</label>
+          <input type="text" name="direccion" placeholder="Dirección del apartamento" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <textarea name="descripcion" placeholder="Descripción del apartamento" class="form-input" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Número de Cuartos</label>
+          <input type="number" name="numero_cuartos" min="1" max="20" value="6" class="form-input" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="modal-crear-close">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Crear Apartamento
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JS: toasts, búsqueda, modales, fetch -->
+<script>
+// ===== Notificaciones =====
+window.addEventListener("load", () => {
+  document.querySelectorAll(".message").forEach((msg) => {
+    setTimeout(() => {
+      msg.style.transition = "opacity 0.5s ease-out, transform 0.5s ease-out";
+      msg.style.opacity = "0";
+      msg.style.transform = "translateY(-6px)";
+      setTimeout(() => { msg.style.display = "none"; }, 500);
+    }, 3000);
+  });
+});
+
+// ===== Búsqueda =====
+const normalizeText = (str) =>
+  (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
+const input = document.getElementById("search-input");
+if (input) {
+  input.addEventListener("input", () => {
+    const term = normalizeText(input.value);
+    document.querySelectorAll(".apartamento-card").forEach((card) => {
+      const title = normalizeText(card.querySelector("h3")?.textContent || "");
+      const match = !term || title.includes(term);
+      card.style.transition = "opacity .3s ease, transform .3s ease";
+      if (match) { card.style.display = "block"; requestAnimationFrame(()=>{ card.style.opacity = "1"; card.style.transform = "scale(1)"; }); }
+      else { card.style.opacity = "0"; card.style.transform = "scale(.97)"; setTimeout(()=>{ if (!normalizeText(card.querySelector("h3")?.textContent || "").includes(normalizeText(input.value))) card.style.display="none"; }, 300); }
+    });
+  });
+}
+
+// ===== Modal =====
+const backdrop = document.getElementById('modal-backdrop');
+const modalForm = document.getElementById('modal-form');
+const modalClose = document.getElementById('modal-close');
+
+function openModal({apto, cuarto, nombre, renta, tipo_contrato}) {
+  modalForm.apto.value = apto;
+  modalForm.cuarto.value = cuarto;
+  modalForm.nombre.value = nombre || '';
+  modalForm.renta.value = renta || 0;
+  modalForm.tipo_contrato.value = tipo_contrato || 'mensual';
+  backdrop.classList.add('show');
+}
+function closeModal() {
+  backdrop.classList.remove('show');
+}
+modalClose.addEventListener('click', closeModal);
+backdrop.addEventListener('click', (e)=>{ if (e.target === backdrop) closeModal(); });
+
+// Abrir modal desde botones
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-open-modal]');
+  if (btn){
+    openModal({
+      apto: btn.dataset.apto,
+      cuarto: btn.dataset.cuarto,
+      nombre: btn.dataset.inquilino || '',
+      renta: btn.dataset.renta || ''
+    });
+  }
+});
+
+// Guardar (asignar/editar) vía API
+modalForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const apto = modalForm.apto.value;
+  const cuarto = modalForm.cuarto.value;
+  const nombre = modalForm.nombre.value;
+  const renta = modalForm.renta.value;
+  const tipo_contrato = modalForm.tipo_contrato.value;
+
+  const res = await fetch(`/api/cuarto/asignar/${apto}/${cuarto}`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ nombre, renta, tipo_contrato })
+  });
+  const data = await res.json();
+  if (data.ok){
+    // Actualizar fila sin recargar
+    const row = document.querySelector(`.apartamento-card[data-apto="${apto}"] tr[data-cuarto="${cuarto}"]`);
+    if (row){
+      row.querySelector('.col-inquilino').textContent = data.cuarto.inquilino || '-';
+      
+      // Actualizar renta con información del contrato
+      const rentaElement = row.querySelector('.col-renta');
+      if (rentaElement) {
+        rentaElement.innerHTML = `
+          <strong>$${Number(data.cuarto.renta).toFixed(2)}</strong>
+          <br><small style="color: var(--secondary);">${data.cuarto.tipo_contrato}</small>
+          ${data.proximo_pago ? `<br><small style="color: var(--primary);">Próximo: ${data.proximo_pago}</small>` : ''}
+        `;
+      }
+      
+      // Actualizar estado visual
+      const estadoBadge = row.querySelector('.estado-badge');
+      if (estadoBadge) {
+        if (data.cuarto.activo) {
+          estadoBadge.className = 'estado-badge ocupado';
+          estadoBadge.textContent = 'Ocupado';
+        } else {
+          estadoBadge.className = 'estado-badge libre';
+          estadoBadge.textContent = 'Libre';
+        }
+      }
+      
+      // refresca dataset de botón
+      const btn = row.querySelector('[data-open-modal]');
+      if (btn){ btn.dataset.inquilino = data.cuarto.inquilino || ''; btn.dataset.renta = data.cuarto.renta || 0; }
+    }
+    toast(data.msg);
+    closeModal();
+  } else {
+    toast(data.msg || 'Error guardando', true);
+  }
+});
+
+// Liberar cuarto
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-liberar]');
+  if (!btn) return;
+  const {apto, cuarto} = btn.dataset;
+  const res = await fetch(`/api/cuarto/liberar/${apto}/${cuarto}`, { method:'POST' });
+  const data = await res.json();
+  if (data.ok){
+    const row = document.querySelector(`.apartamento-card[data-apto="${apto}"] tr[data-cuarto="${cuarto}"]`);
+    if (row){
+      row.querySelector('.col-inquilino').textContent = '-';
+      row.querySelector('.col-renta').textContent = '$0.00';
+      
+      // Actualizar estado visual
+      const estadoBadge = row.querySelector('.estado-badge');
+      if (estadoBadge) {
+        estadoBadge.className = 'estado-badge libre';
+        estadoBadge.textContent = 'Libre';
+      }
+      
+      const edit = row.querySelector('[data-open-modal]');
+      if (edit){ edit.dataset.inquilino=''; edit.dataset.renta='0'; }
+    }
+    toast(data.msg);
+  } else {
+    toast('No se pudo liberar', true);
+  }
+});
+
+// Registrar pago
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-registrar-pago]');
+  if (!btn) return;
+  const {apto, cuarto, monto} = btn.dataset;
+  const res = await fetch(`/api/pagos/registrar/${apto}/${cuarto}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ monto: Number(monto || 0) })
+  });
+  const data = await res.json();
+  
+  if (data.success) {
+  toast(data.msg);
+    if (data.proximo_pago) {
+      toast(`Próximo pago: ${data.proximo_pago}`, false);
+    }
+  } else {
+    toast(data.msg || 'Error registrando pago', true);
+  }
+});
+
+// Solicitar pago
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-solicitar-pago]');
+  if (!btn) return;
+  const {apto, cuarto} = btn.dataset;
+  const nota = prompt('Nota para la solicitud (opcional):') || '';
+  const monto = prompt('Monto a solicitar:', '500') || '500';
+  const res = await fetch(`/api/pagos/solicitar/${apto}/${cuarto}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ nota, monto: parseFloat(monto) })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    toast(data.msg);
+  } else {
+    toast(data.msg || 'Error enviando solicitud', true);
+  }
+});
+
+// Marcar limpieza
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-marcar-limpieza]');
+  if (!btn) return;
+  const {apto, cuarto} = btn.dataset;
+  const minutos = prompt('Minutos empleados:', '30') || '30';
+  const motivo = prompt('Motivo/nota (opcional):') || '';
+  const res = await fetch(`/api/limpieza/marcar/${apto}/${cuarto}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ minutos: parseInt(minutos), motivo })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    toast(data.msg);
+    if (data.siguiente_cuarto) {
+      toast(`Siguiente: Habitación ${data.siguiente_cuarto.numero} - ${data.siguiente_cuarto.inquilino}`);
+    }
+  } else {
+    toast(data.msg || 'Error registrando limpieza', true);
+  }
+});
+
+// Registrar gas
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-registrar-gas]');
+  if (!btn) return;
+  const {apto, cuarto} = btn.dataset;
+  const nota = prompt('Nota (opcional):') || '';
+  const res = await fetch(`/api/gas/registrar/${apto}/${cuarto}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ nota })
+  });
+  const data = await res.json();
+  if (data.ok) {
+  toast(data.msg);
+    if (data.siguiente_cuarto) {
+      toast(`Siguiente: Habitación ${data.siguiente_cuarto.numero} - ${data.siguiente_cuarto.inquilino}`);
+    }
+  } else {
+    toast(data.msg || 'Error registrando gas', true);
+  }
+});
+
+// ===== Gestión de Apartamentos =====
+const modalCrearApartamento = document.getElementById('modal-crear-apartamento');
+const formCrearApartamento = document.getElementById('form-crear-apartamento');
+const modalCrearClose = document.getElementById('modal-crear-close');
+
+function abrirModalCrearApartamento() {
+  modalCrearApartamento.classList.add('show');
+}
+
+function cerrarModalCrearApartamento() {
+  modalCrearApartamento.classList.remove('show');
+  formCrearApartamento.reset();
+}
+
+// Event listeners para el modal de crear apartamento
+modalCrearClose.addEventListener('click', cerrarModalCrearApartamento);
+modalCrearApartamento.addEventListener('click', (e) => {
+  if (e.target === modalCrearApartamento) {
+    cerrarModalCrearApartamento();
+  }
+});
+
+// Manejar envío del formulario de crear apartamento
+formCrearApartamento.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(formCrearApartamento);
+  const data = {
+    numero: parseInt(formData.get('numero')),
+    renta_base: parseFloat(formData.get('renta_base')),
+    direccion: formData.get('direccion') || null,
+    descripcion: formData.get('descripcion') || null,
+    numero_cuartos: parseInt(formData.get('numero_cuartos')) || 6
+  };
+  
+  try {
+    const response = await fetch('/api/apartamentos', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      toast('Apartamento creado exitosamente', false);
+      cerrarModalCrearApartamento();
+      // Recargar la página para mostrar el nuevo apartamento
+      setTimeout(() => {
+        location.reload();
+      }, 1500);
+    } else {
+      toast('Error al crear apartamento: ' + result.error, true);
+    }
+  } catch (error) {
+    toast('Error de conexión al crear apartamento', true);
+  }
+});
+
+// ===== Búsqueda Mejorada =====
+const searchInput = document.getElementById('search-input');
+const apartamentosContainer = document.getElementById('apartamentos-container');
+
+searchInput.addEventListener('input', async (e) => {
+  const termino = e.target.value.trim();
+  
+  if (termino.length < 2) {
+    // Si el término es muy corto, mostrar todos los apartamentos
+    location.reload();
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/apartamentos/buscar?q=${encodeURIComponent(termino)}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      mostrarResultadosBusqueda(result.data);
+    } else {
+      toast('Error en la búsqueda: ' + result.error, true);
+    }
+  } catch (error) {
+    toast('Error de conexión en la búsqueda', true);
+  }
+});
+
+function mostrarResultadosBusqueda(apartamentos) {
+  if (apartamentos.length === 0) {
+    apartamentosContainer.innerHTML = `
+      <div class="text-center p-8">
+        <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">No se encontraron apartamentos</h3>
+        <p class="text-gray-500">Intenta con otros términos de búsqueda</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Aquí podrías generar las tarjetas de apartamentos dinámicamente
+  // Por simplicidad, recargamos la página con los resultados
+  location.reload();
+}
+
+// Toast simple
+function toast(msg, error=false){
+  const el = document.createElement('div');
+  el.className = `message ${error ? 'error' : 'success'}`;
+  el.textContent = msg;
+  document.querySelector('.container').prepend(el);
+  setTimeout(()=>{ 
+    el.style.transition = "opacity .5s ease, transform .5s ease"; 
+    el.style.opacity = '0'; 
+    el.style.transform = 'translateY(-6px)'; 
+    setTimeout(()=>el.remove(), 500); 
+  }, 2500);
+}
+</script>
+</body>
+</html>
